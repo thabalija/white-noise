@@ -1,0 +1,57 @@
+:root {
+  --color-bg: #0c0f14;
+  --color-surface: rgba(255, 255, 255, 0.06);
+  --color-surface-active: rgba(255, 255, 255, 0.12);
+  --color-text: #f0f2f5;
+  --color-text-muted: rgba(240, 242, 245, 0.55);
+  --color-accent: #5c7cfa;
+  --color-accent-soft: rgba(92, 124, 250, 0.35);
+
+  --color-bg-white: #12151c;
+  --color-accent-white: #8b95a8;
+
+  --color-bg-pink: #141018;
+  --color-accent-pink: #c47eb8;
+
+  --color-bg-brown: #120f0c;
+  --color-accent-brown: #a8845c;
+
+  --color-bg-grey: #141618;
+  --color-accent-grey: #9a9aa8;
+
+  --color-bg-green: #0c1210;
+  --color-accent-green: #6b9e72;
+
+  --color-bg-fan: #0e1014;
+  --color-accent-fan: #7a8a9a;
+}
+
+[data-sound="white"] {
+  --color-bg-active: var(--color-bg-white);
+  --color-accent-active: var(--color-accent-white);
+}
+
+[data-sound="pink"] {
+  --color-bg-active: var(--color-bg-pink);
+  --color-accent-active: var(--color-accent-pink);
+}
+
+[data-sound="brown"] {
+  --color-bg-active: var(--color-bg-brown);
+  --color-accent-active: var(--color-accent-brown);
+}
+
+[data-sound="grey"] {
+  --color-bg-active: var(--color-bg-grey);
+  --color-accent-active: var(--color-accent-grey);
+}
+
+[data-sound="green"] {
+  --color-bg-active: var(--color-bg-green);
+  --color-accent-active: var(--color-accent-green);
+}
+
+[data-sound="fan"] {
+  --color-bg-active: var(--color-bg-fan);
+  --color-accent-active: var(--color-accent-fan);
+}

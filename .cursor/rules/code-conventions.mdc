@@ -1,0 +1,15 @@
+---
+description: React, Tailwind tokens, Motion, and Biome conventions for white-noise
+globs: src/**/*
+alwaysApply: false
+---
+
+# Code conventions
+
+- Use `type`, not `interface`. No `any`.
+- React 19 ref-as-prop. No `forwardRef`. Destructure `ref` before `...props`. Set `displayName` on exported components.
+- Biome formats and lints. Import order: external packages, blank line, relative imports.
+- PascalCase component files under `src/components/`.
+- Colors only via CSS variables and Tailwind 4 `bg-(--color-*)` form. No hex in components. Tokens in `src/styles/tokens.css`.
+- Respect `prefers-reduced-motion` with Motion `useReducedMotion`.
+- User-facing strings in `src/sounds.ts` and `src/copy.ts`, not scattered in JSX.
