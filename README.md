@@ -1,4 +1,4 @@
-# White noise
+# Suuush
 
 Installable mobile web app (PWA) for generated ambience: white, pink, brown, grey, green, and fan noise. Background playback and notification controls on Android Chrome when added to the home screen.
 
