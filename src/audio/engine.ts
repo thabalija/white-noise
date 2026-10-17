@@ -1,30 +1,26 @@
 import type { SoundId } from "../sounds";
+import { LOOP_SAMPLE_RATE, renderSoundLoop } from "./synth";
+import { encodeStereoWav } from "./wav";
 
 const FADE_OUT_SECONDS = 12;
-const SOUND_SWAP_DIP_SECONDS = 0.04;
 
-export type NoiseEngineState = {
-  playing: boolean;
-  soundId: SoundId;
-  volume: number;
+type AudioSessionNavigator = Navigator & {
+  audioSession?: { type: string };
 };
 
 export class NoiseEngine {
-  private audioContext: AudioContext | null = null;
-  private worklet: AudioWorkletNode | null = null;
-  private gain: GainNode | null = null;
   private audioEl: HTMLAudioElement | null = null;
   private userVolume = 0.7;
   private soundId: SoundId = "white";
-  private initialized = false;
   private fading = false;
+  private fadeTimer: number | null = null;
+  private suppressPauseHandler = false;
+  private systemPauseHandler: (() => void) | null = null;
+  private readonly urls = new Map<SoundId, string>();
+  private currentUrl = "";
 
   getAudioElement(): HTMLAudioElement | null {
     return this.audioEl;
-  }
-
-  getContext(): AudioContext | null {
-    return this.audioContext;
   }
 
   isPlaying(): boolean {
@@ -39,147 +35,171 @@ export class NoiseEngine {
     return this.userVolume;
   }
 
-  async ensureReady(): Promise<void> {
-    if (this.initialized) {
-      if (this.audioContext?.state === "suspended") {
-        await this.audioContext.resume();
-      }
-      return;
+  setSystemPauseHandler(handler: () => void): void {
+    this.systemPauseHandler = handler;
+  }
+
+  private mount(): HTMLAudioElement {
+    if (this.audioEl) {
+      return this.audioEl;
     }
 
-    const audioContext = new AudioContext();
-    await audioContext.audioWorklet.addModule(
-      new URL("./processor.js", import.meta.url),
-    );
-
-    const worklet = new AudioWorkletNode(audioContext, "noise-processor");
-    const gain = audioContext.createGain();
-    const destination = audioContext.createMediaStreamDestination();
-
-    worklet.connect(gain);
-    gain.connect(destination);
-
-    const audioEl = new Audio();
-    audioEl.srcObject = destination.stream;
+    const audioEl = document.createElement("audio");
     audioEl.loop = true;
+    audioEl.preload = "auto";
     audioEl.setAttribute("playsinline", "true");
+    audioEl.setAttribute("webkit-playsinline", "true");
+    audioEl.style.position = "fixed";
+    audioEl.style.bottom = "0";
+    audioEl.style.left = "0";
+    audioEl.style.width = "1px";
+    audioEl.style.height = "1px";
+    audioEl.style.opacity = "0.01";
+    audioEl.style.pointerEvents = "none";
+    document.body.appendChild(audioEl);
 
-    gain.gain.value = this.userVolume;
+    audioEl.addEventListener("pause", () => {
+      if (this.suppressPauseHandler) {
+        return;
+      }
+      this.clearFade();
+      this.systemPauseHandler?.();
+    });
+    audioEl.addEventListener("timeupdate", () => {
+      if (
+        !("mediaSession" in navigator) ||
+        !Number.isFinite(audioEl.duration)
+      ) {
+        return;
+      }
+      const position = Math.min(audioEl.currentTime, audioEl.duration);
+      try {
+        navigator.mediaSession.setPositionState({
+          duration: audioEl.duration,
+          playbackRate: audioEl.playbackRate,
+          position,
+        });
+      } catch {
+        // Ignore a position that lands past the loop boundary.
+      }
+    });
 
-    worklet.port.postMessage({ type: "set-sound", soundId: this.soundId });
-
-    this.audioContext = audioContext;
-    this.worklet = worklet;
-    this.gain = gain;
     this.audioEl = audioEl;
-    this.initialized = true;
+    return audioEl;
+  }
+
+  private sourceFor(soundId: SoundId): string {
+    const cached = this.urls.get(soundId);
+    if (cached) {
+      return cached;
+    }
+    const samples = renderSoundLoop(soundId);
+    const blob = encodeStereoWav(samples, LOOP_SAMPLE_RATE);
+    const url = URL.createObjectURL(blob);
+    this.urls.set(soundId, url);
+    return url;
+  }
+
+  private applySource(soundId: SoundId): void {
+    const audioEl = this.mount();
+    const url = this.sourceFor(soundId);
+    if (this.currentUrl !== url) {
+      this.currentUrl = url;
+      audioEl.src = url;
+      audioEl.loop = true;
+    }
   }
 
   async play(): Promise<void> {
-    await this.ensureReady();
-    if (!this.audioEl || !this.audioContext || !this.gain) {
-      return;
-    }
-    if (this.audioContext.state === "suspended") {
-      await this.audioContext.resume();
-    }
-    this.fading = false;
-    this.gain.gain.cancelScheduledValues(this.audioContext.currentTime);
-    this.gain.gain.setTargetAtTime(
-      this.userVolume,
-      this.audioContext.currentTime,
-      0.01,
-    );
-    await this.audioEl.play();
+    const audioEl = this.mount();
+    this.clearFade();
+    this.applySource(this.soundId);
+    audioEl.volume = this.userVolume;
+    this.markPlaybackSession();
+    await audioEl.play();
   }
 
   pause(): void {
-    this.fading = false;
-    this.audioEl?.pause();
-    if (this.audioContext && this.gain) {
-      this.gain.gain.cancelScheduledValues(this.audioContext.currentTime);
-      this.gain.gain.setTargetAtTime(
-        this.userVolume,
-        this.audioContext.currentTime,
-        0.01,
-      );
+    this.clearFade();
+    if (!this.audioEl) {
+      return;
     }
+    this.suppressPauseHandler = true;
+    this.audioEl.pause();
+    this.suppressPauseHandler = false;
+    this.audioEl.volume = this.userVolume;
   }
 
   setVolume(volume: number): void {
     this.userVolume = Math.min(1, Math.max(0, volume));
-    if (!this.audioContext || !this.gain || this.fading) {
+    if (!this.audioEl || this.fading) {
       return;
     }
-    this.gain.gain.cancelScheduledValues(this.audioContext.currentTime);
-    this.gain.gain.setTargetAtTime(
-      this.userVolume,
-      this.audioContext.currentTime,
-      0.02,
-    );
+    this.audioEl.volume = this.userVolume;
   }
 
-  async setSound(soundId: SoundId): Promise<void> {
+  setSound(soundId: SoundId): void {
     const wasPlaying = this.isPlaying();
     this.soundId = soundId;
-    if (!this.worklet || !this.audioContext || !this.gain) {
+    if (!this.audioEl) {
       return;
     }
-
+    this.applySource(soundId);
     if (wasPlaying) {
-      const now = this.audioContext.currentTime;
-      this.gain.gain.cancelScheduledValues(now);
-      this.gain.gain.setValueAtTime(this.gain.gain.value, now);
-      this.gain.gain.linearRampToValueAtTime(
-        0.0001,
-        now + SOUND_SWAP_DIP_SECONDS,
-      );
-      this.gain.gain.linearRampToValueAtTime(
-        this.userVolume,
-        now + SOUND_SWAP_DIP_SECONDS * 2,
-      );
+      this.markPlaybackSession();
+      void this.audioEl.play();
     }
-
-    this.worklet.port.postMessage({ type: "set-sound", soundId });
   }
 
-  async fadeOutAndPause(onComplete: () => void): Promise<void> {
-    await this.ensureReady();
-    if (!this.audioContext || !this.gain || !this.audioEl) {
-      onComplete();
-      return;
-    }
-    if (!this.isPlaying()) {
+  fadeOutAndPause(onComplete: () => void): void {
+    const audioEl = this.audioEl;
+    if (!audioEl || audioEl.paused) {
       onComplete();
       return;
     }
 
+    this.clearFade();
     this.fading = true;
-    const now = this.audioContext.currentTime;
-    this.gain.gain.cancelScheduledValues(now);
-    this.gain.gain.setValueAtTime(this.gain.gain.value, now);
-    this.gain.gain.linearRampToValueAtTime(0, now + FADE_OUT_SECONDS);
+    const startedAt = Date.now();
+    const from = audioEl.volume;
 
-    window.setTimeout(() => {
-      this.fading = false;
-      this.audioEl?.pause();
-      if (this.audioContext && this.gain) {
-        this.gain.gain.cancelScheduledValues(this.audioContext.currentTime);
-        this.gain.gain.setValueAtTime(
-          this.userVolume,
-          this.audioContext.currentTime,
-        );
+    this.fadeTimer = window.setInterval(() => {
+      const t = Math.min(
+        1,
+        (Date.now() - startedAt) / (FADE_OUT_SECONDS * 1000),
+      );
+      audioEl.volume = from * (1 - t);
+      if (t < 1) {
+        return;
       }
+      this.fading = false;
+      this.clearFade();
+      this.pause();
+      audioEl.volume = this.userVolume;
       onComplete();
-    }, FADE_OUT_SECONDS * 1000);
+    }, 250);
   }
 
   async resumeIfNeeded(shouldBePlaying: boolean): Promise<void> {
-    if (!shouldBePlaying || !this.audioContext) {
+    if (!shouldBePlaying || !this.audioEl?.paused) {
       return;
     }
-    if (this.audioContext.state === "suspended") {
-      await this.audioContext.resume();
+    this.markPlaybackSession();
+    await this.audioEl.play();
+  }
+
+  private clearFade(): void {
+    if (this.fadeTimer !== null) {
+      window.clearInterval(this.fadeTimer);
+      this.fadeTimer = null;
+    }
+    this.fading = false;
+  }
+
+  private markPlaybackSession(): void {
+    const session = (navigator as AudioSessionNavigator).audioSession;
+    if (session) {
+      session.type = "playback";
     }
   }
 }

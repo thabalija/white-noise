@@ -39,10 +39,23 @@ export function updateMediaSession(soundId: SoundId, playing: boolean): void {
   }
 
   const sound = getSoundById(soundId);
+  const origin = window.location.origin;
   navigator.mediaSession.metadata = new MediaMetadata({
     title: sound.label,
     artist: COPY.artistName,
     album: COPY.appTitle,
+    artwork: [
+      {
+        src: `${origin}/icons/icon-192.png`,
+        sizes: "192x192",
+        type: "image/png",
+      },
+      {
+        src: `${origin}/icons/icon-512.png`,
+        sizes: "512x512",
+        type: "image/png",
+      },
+    ],
   });
   navigator.mediaSession.playbackState = playing ? "playing" : "paused";
 }

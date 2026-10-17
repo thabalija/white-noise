@@ -102,9 +102,17 @@ export function usePlayer(): PlayerState {
   }, [engine, persist, syncMediaSession]);
 
   const startPlayback = useCallback(async () => {
-    await engine.setSound(soundId);
-    await engine.play();
+    engine.setSound(soundId);
     playingRef.current = true;
+    syncMediaSession();
+    try {
+      await engine.play();
+    } catch {
+      playingRef.current = false;
+      setPlaying(false);
+      syncMediaSession();
+      return;
+    }
     setPlaying(true);
 
     if (timerMinutes > 0 && timerEndsAtRef.current === null) {
@@ -134,7 +142,7 @@ export function usePlayer(): PlayerState {
     async (id: SoundId) => {
       setSoundIdState(id);
       document.documentElement.dataset.sound = id;
-      await engine.setSound(id);
+      engine.setSound(id);
       syncMediaSession();
       persist();
     },
@@ -169,8 +177,19 @@ export function usePlayer(): PlayerState {
   );
 
   actionsRef.current = { startPlayback, pausePlayback, setSound };
+  const sessionSyncRef = useRef({ persist, syncMediaSession });
+  sessionSyncRef.current = { persist, syncMediaSession };
 
   useEffect(() => {
+    engine.setSystemPauseHandler(() => {
+      if (!playingRef.current) {
+        return;
+      }
+      playingRef.current = false;
+      setPlaying(false);
+      sessionSyncRef.current.syncMediaSession();
+      sessionSyncRef.current.persist();
+    });
     setupMediaSessionHandlers();
     bindMediaSessionActions({
       onPlay: () => {
@@ -186,7 +205,7 @@ export function usePlayer(): PlayerState {
         void actionsRef.current.setSound(previousSoundId(soundIdRef.current));
       },
     });
-  }, []);
+  }, [engine.setSystemPauseHandler]);
 
   useEffect(() => {
     document.documentElement.dataset.sound = soundId;
@@ -239,7 +258,7 @@ export function usePlayer(): PlayerState {
         !fadeStartedRef.current
       ) {
         fadeStartedRef.current = true;
-        void engine.fadeOutAndPause(() => {
+        engine.fadeOutAndPause(() => {
           playingRef.current = false;
           setPlaying(false);
           clearTimerEnd();
