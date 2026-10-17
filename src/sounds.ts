@@ -12,15 +12,16 @@ export type SoundId = (typeof SOUND_IDS)[number];
 export type SoundDefinition = {
   id: SoundId;
   label: string;
+  image: string;
 };
 
 export const SOUNDS: readonly SoundDefinition[] = [
-  { id: "white", label: "White noise" },
-  { id: "pink", label: "Pink noise" },
-  { id: "brown", label: "Brown noise" },
-  { id: "grey", label: "Grey noise" },
-  { id: "green", label: "Green noise" },
-  { id: "fan", label: "Fan" },
+  { id: "white", label: "White noise", image: "/backgrounds/white.jpg" },
+  { id: "pink", label: "Pink noise", image: "/backgrounds/pink.jpg" },
+  { id: "brown", label: "Brown noise", image: "/backgrounds/brown.jpg" },
+  { id: "grey", label: "Grey noise", image: "/backgrounds/grey.jpg" },
+  { id: "green", label: "Green noise", image: "/backgrounds/green.jpg" },
+  { id: "fan", label: "Fan", image: "/backgrounds/fan.jpg" },
 ] as const;
 
 export function getSoundById(id: SoundId): SoundDefinition {

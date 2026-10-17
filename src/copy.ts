@@ -1,6 +1,7 @@
 export const COPY = {
   appTitle: "Suuush",
   artistName: "Suuush",
+  nowPlaying: "Now Playing",
   volumeLabel: "Volume",
   timerLabel: "Sleep timer",
   timerOff: "Off",

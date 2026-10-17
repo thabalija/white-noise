@@ -9,10 +9,10 @@ VolumeSlider.displayName = "VolumeSlider";
 
 function VolumeSlider({ volume, onChange }: VolumeSliderProps) {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3">
       <label
         htmlFor="volume-slider"
-        className="text-sm font-medium text-(--color-text-muted)"
+        className="text-[0.65rem] tracking-[0.18em] text-(--color-text-muted) uppercase"
       >
         {COPY.volumeLabel}
       </label>
@@ -24,7 +24,7 @@ function VolumeSlider({ volume, onChange }: VolumeSliderProps) {
         step={0.01}
         value={volume}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="h-2 w-full cursor-pointer appearance-none rounded-full bg-(--color-surface) accent-(--color-accent-active)"
+        className="volume-slider w-full cursor-pointer"
       />
     </div>
   );

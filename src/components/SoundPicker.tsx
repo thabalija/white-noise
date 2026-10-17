@@ -12,14 +12,14 @@ SoundPicker.displayName = "SoundPicker";
 
 function SoundPicker({ soundId, onSelect }: SoundPickerProps) {
   return (
-    <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
+    <fieldset className="m-0 flex flex-wrap justify-center gap-2 border-0 p-0">
       <legend className="sr-only">{COPY.soundPickerLabel}</legend>
       {SOUNDS.map((sound) => {
         const selected = sound.id === soundId;
         return (
           <label
             key={sound.id}
-            className="relative block cursor-pointer rounded-xl px-4 py-3 text-left text-base transition-colors"
+            className="relative cursor-pointer rounded-full px-3 py-2 text-[0.65rem] tracking-wide"
           >
             <input
               type="radio"
@@ -32,10 +32,12 @@ function SoundPicker({ soundId, onSelect }: SoundPickerProps) {
             {selected ? (
               <motion.span
                 layoutId="sound-highlight"
-                className="pointer-events-none absolute inset-0 rounded-xl bg-(--color-surface-active) ring-1 ring-(--color-accent-active)/40"
+                className="pointer-events-none absolute inset-0 rounded-full border border-(--color-line) bg-(--color-glass-strong)"
                 transition={{ type: "spring", stiffness: 400, damping: 32 }}
               />
-            ) : null}
+            ) : (
+              <span className="pointer-events-none absolute inset-0 rounded-full bg-(--color-glass)" />
+            )}
             <span
               className={`relative z-10 ${selected ? "text-(--color-text)" : "text-(--color-text-muted)"}`}
             >

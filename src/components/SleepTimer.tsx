@@ -22,8 +22,8 @@ function SleepTimer({ timerMinutes, remainingMs, onSelect }: SleepTimerProps) {
   const remainingLabel = formatRemaining(remainingMs);
 
   return (
-    <div className="flex flex-col gap-2">
-      <span className="text-sm font-medium text-(--color-text-muted)">
+    <div className="flex flex-col gap-3">
+      <span className="text-[0.65rem] tracking-[0.18em] text-(--color-text-muted) uppercase">
         {COPY.timerLabel}
       </span>
       <fieldset className="m-0 flex flex-wrap gap-2 border-0 p-0">
@@ -35,10 +35,10 @@ function SleepTimer({ timerMinutes, remainingMs, onSelect }: SleepTimerProps) {
           return (
             <label
               key={minutes}
-              className={`cursor-pointer rounded-full px-3 py-1.5 text-sm transition-colors ${
+              className={`cursor-pointer rounded-full border px-3 py-1.5 text-[0.65rem] tracking-wide ${
                 selected
-                  ? "bg-(--color-accent-active) text-(--color-bg-active)"
-                  : "bg-(--color-surface) text-(--color-text-muted)"
+                  ? "border-(--color-line) bg-(--color-glass-strong) text-(--color-text)"
+                  : "border-transparent bg-(--color-glass) text-(--color-text-muted)"
               }`}
             >
               <input
@@ -54,11 +54,12 @@ function SleepTimer({ timerMinutes, remainingMs, onSelect }: SleepTimerProps) {
           );
         })}
       </fieldset>
-      {remainingLabel ? (
-        <p className="text-sm tabular-nums text-(--color-accent-active)">
-          {remainingLabel}
-        </p>
-      ) : null}
+      <p
+        className="min-h-[1.2em] text-[0.65rem] tracking-wide text-(--color-text)"
+        aria-live="polite"
+      >
+        {remainingLabel ?? "\u00a0"}
+      </p>
     </div>
   );
 }

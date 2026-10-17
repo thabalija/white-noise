@@ -1,7 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 import { DURATION, EASE } from "../motion/tokens";
-import type { SoundId } from "../sounds";
+import { getSoundById, type SoundId } from "../sounds";
 
 type AmbientBackgroundProps = {
   soundId: SoundId;
@@ -11,16 +11,19 @@ AmbientBackground.displayName = "AmbientBackground";
 
 function AmbientBackground({ soundId }: AmbientBackgroundProps) {
   const reducedMotion = useReducedMotion();
+  const sound = getSoundById(soundId);
 
   return (
     <div
-      className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+      className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-(--color-bg)"
       aria-hidden
     >
       <AnimatePresence mode="sync" initial={false}>
-        <motion.div
+        <motion.img
           key={soundId}
-          className="absolute inset-0 bg-(--color-bg-active)"
+          src={sound.image}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover"
           initial={reducedMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={reducedMotion ? undefined : { opacity: 0 }}
@@ -30,13 +33,8 @@ function AmbientBackground({ soundId }: AmbientBackgroundProps) {
           }}
         />
       </AnimatePresence>
-      <div
-        className="absolute inset-0 opacity-40"
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 60% at 50% 20%, var(--color-accent-active), transparent 70%)",
-        }}
-      />
+      <div className="ambient-wash absolute inset-0" />
+      <div className="ambient-overlay absolute inset-0" />
     </div>
   );
 }

@@ -2,8 +2,19 @@
   --color-bg: #0c0f14;
   --color-surface: rgba(255, 255, 255, 0.06);
   --color-surface-active: rgba(255, 255, 255, 0.12);
-  --color-text: #f0f2f5;
-  --color-text-muted: rgba(240, 242, 245, 0.55);
+  --color-text: #f4f6f8;
+  --color-text-muted: rgb(244 246 248 / 0.62);
+  --color-line: rgb(244 246 248 / 0.38);
+  --color-glass: rgb(8 10 14 / 0.28);
+  --color-glass-strong: rgb(244 246 248 / 0.16);
+  --color-scrim: rgb(6 8 12 / 0.58);
+  --overlay-gradient: linear-gradient(
+    180deg,
+    rgb(6 8 12 / 0.2) 0%,
+    rgb(6 8 12 / 0.42) 34%,
+    rgb(6 8 12 / 0.78) 62%,
+    rgb(6 8 12 / 0.94) 100%
+  );
   --color-accent: #5c7cfa;
   --color-accent-soft: rgba(92, 124, 250, 0.35);
 
