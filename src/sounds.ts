@@ -5,16 +5,11 @@ export const SOUND_IDS = [
   "grey",
   "jungle",
   "waves",
+  "rain",
   "fan",
 ] as const;
 
-export const GENERATED_SOUND_IDS = [
-  "white",
-  "pink",
-  "brown",
-  "grey",
-  "fan",
-] as const;
+export const GENERATED_SOUND_IDS = ["grey"] as const;
 
 export type GeneratedSoundId = (typeof GENERATED_SOUND_IDS)[number];
 
@@ -28,9 +23,24 @@ export type SoundDefinition = {
 };
 
 export const SOUNDS: readonly SoundDefinition[] = [
-  { id: "white", label: "White noise", image: "/backgrounds/white.jpg" },
-  { id: "pink", label: "Pink noise", image: "/backgrounds/pink.jpg" },
-  { id: "brown", label: "Brown noise", image: "/backgrounds/brown.jpg" },
+  {
+    id: "white",
+    label: "White noise",
+    image: "/backgrounds/white.jpg",
+    audio: "/audio/white.mp3",
+  },
+  {
+    id: "pink",
+    label: "Pink noise",
+    image: "/backgrounds/pink.jpg",
+    audio: "/audio/pink.mp3",
+  },
+  {
+    id: "brown",
+    label: "Brown noise",
+    image: "/backgrounds/brown.jpg",
+    audio: "/audio/brown.mp3",
+  },
   { id: "grey", label: "Grey noise", image: "/backgrounds/grey.jpg" },
   {
     id: "jungle",
@@ -44,7 +54,18 @@ export const SOUNDS: readonly SoundDefinition[] = [
     image: "/backgrounds/waves.jpg",
     audio: "/audio/waves.mp3",
   },
-  { id: "fan", label: "Fan", image: "/backgrounds/fan.jpg" },
+  {
+    id: "rain",
+    label: "Rain",
+    image: "/backgrounds/rain.jpg",
+    audio: "/audio/rain.mp3",
+  },
+  {
+    id: "fan",
+    label: "Fan",
+    image: "/backgrounds/fan.jpg",
+    audio: "/audio/fan.mp3",
+  },
 ] as const;
 
 export function getSoundById(id: SoundId): SoundDefinition {

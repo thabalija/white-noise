@@ -36,6 +36,9 @@
   --color-bg-waves: #0c1218;
   --color-accent-waves: #6a90b0;
 
+  --color-bg-rain: #101418;
+  --color-accent-rain: #7a8ea0;
+
   --color-bg-fan: #0e1014;
   --color-accent-fan: #7a8a9a;
 }
@@ -68,6 +71,11 @@
 [data-sound="waves"] {
   --color-bg-active: var(--color-bg-waves);
   --color-accent-active: var(--color-accent-waves);
+}
+
+[data-sound="rain"] {
+  --color-bg-active: var(--color-bg-rain);
+  --color-accent-active: var(--color-accent-rain);
 }
 
 [data-sound="fan"] {
