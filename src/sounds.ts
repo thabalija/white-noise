@@ -3,9 +3,20 @@ export const SOUND_IDS = [
   "pink",
   "brown",
   "grey",
-  "green",
+  "jungle",
+  "waves",
   "fan",
 ] as const;
+
+export const GENERATED_SOUND_IDS = [
+  "white",
+  "pink",
+  "brown",
+  "grey",
+  "fan",
+] as const;
+
+export type GeneratedSoundId = (typeof GENERATED_SOUND_IDS)[number];
 
 export type SoundId = (typeof SOUND_IDS)[number];
 
@@ -13,6 +24,7 @@ export type SoundDefinition = {
   id: SoundId;
   label: string;
   image: string;
+  audio?: string;
 };
 
 export const SOUNDS: readonly SoundDefinition[] = [
@@ -20,7 +32,18 @@ export const SOUNDS: readonly SoundDefinition[] = [
   { id: "pink", label: "Pink noise", image: "/backgrounds/pink.jpg" },
   { id: "brown", label: "Brown noise", image: "/backgrounds/brown.jpg" },
   { id: "grey", label: "Grey noise", image: "/backgrounds/grey.jpg" },
-  { id: "green", label: "Green noise", image: "/backgrounds/green.jpg" },
+  {
+    id: "jungle",
+    label: "Jungle",
+    image: "/backgrounds/jungle.jpg",
+    audio: "/audio/jungle.mp3",
+  },
+  {
+    id: "waves",
+    label: "Sea waves",
+    image: "/backgrounds/waves.jpg",
+    audio: "/audio/waves.mp3",
+  },
   { id: "fan", label: "Fan", image: "/backgrounds/fan.jpg" },
 ] as const;
 
@@ -46,4 +69,8 @@ export function previousSoundId(current: SoundId): SoundId {
 
 export function isSoundId(value: string): value is SoundId {
   return (SOUND_IDS as readonly string[]).includes(value);
+}
+
+export function isGeneratedSound(id: SoundId): id is GeneratedSoundId {
+  return (GENERATED_SOUND_IDS as readonly string[]).includes(id);
 }

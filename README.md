@@ -1,6 +1,6 @@
 # Suuush
 
-Installable mobile web app (PWA) for generated ambience: white, pink, brown, grey, green, and fan noise. Background playback and notification controls on Android Chrome when added to the home screen.
+Installable mobile web app (PWA) for ambience: white, pink, brown, and grey noise, jungle, sea waves, and a fan. Background playback and notification controls on Android Chrome when added to the home screen.
 
 ## Commands
 

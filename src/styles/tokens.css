@@ -30,8 +30,11 @@
   --color-bg-grey: #141618;
   --color-accent-grey: #9a9aa8;
 
-  --color-bg-green: #0c1210;
-  --color-accent-green: #6b9e72;
+  --color-bg-jungle: #0c1210;
+  --color-accent-jungle: #6b9e72;
+
+  --color-bg-waves: #0c1218;
+  --color-accent-waves: #6a90b0;
 
   --color-bg-fan: #0e1014;
   --color-accent-fan: #7a8a9a;
@@ -57,9 +60,14 @@
   --color-accent-active: var(--color-accent-grey);
 }
 
-[data-sound="green"] {
-  --color-bg-active: var(--color-bg-green);
-  --color-accent-active: var(--color-accent-green);
+[data-sound="jungle"] {
+  --color-bg-active: var(--color-bg-jungle);
+  --color-accent-active: var(--color-accent-jungle);
+}
+
+[data-sound="waves"] {
+  --color-bg-active: var(--color-bg-waves);
+  --color-accent-active: var(--color-accent-waves);
 }
 
 [data-sound="fan"] {

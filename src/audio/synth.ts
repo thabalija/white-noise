@@ -1,4 +1,4 @@
-import type { SoundId } from "../sounds";
+import type { GeneratedSoundId } from "../sounds";
 
 const LOOP_SECONDS = 180;
 const CROSSFADE_SECONDS = 0.08;
@@ -18,8 +18,6 @@ class NoiseSynth {
   private fanPhase = 0;
   private greyLpLow = 0;
   private greyLpHigh = 0;
-  private greenLp = 0;
-  private greenHp = 0;
 
   constructor(sampleRate: number) {
     this.sampleRate = sampleRate;
@@ -81,14 +79,7 @@ class NoiseSynth {
     return (this.greyLpHigh - this.greyLpLow) * 0.55;
   }
 
-  private green(): number {
-    const white = this.white() * 0.35;
-    this.greenHp = this.lowpass(this.greenHp, white, 280);
-    this.greenLp = this.lowpass(this.greenLp, white, 650);
-    return (this.greenLp - this.greenHp) * 0.75;
-  }
-
-  sample(id: SoundId): number {
+  sample(id: GeneratedSoundId): number {
     switch (id) {
       case "white":
         return this.white() * 0.35;
@@ -98,8 +89,6 @@ class NoiseSynth {
         return this.brown();
       case "grey":
         return this.grey();
-      case "green":
-        return this.green();
       case "fan":
         return this.fan();
       default:
@@ -126,7 +115,7 @@ function crossfadeLoop(
   return looped;
 }
 
-export function renderSoundLoop(soundId: SoundId): Float32Array {
+export function renderSoundLoop(soundId: GeneratedSoundId): Float32Array {
   const synth = new NoiseSynth(SAMPLE_RATE);
   const total = Math.floor(LOOP_SECONDS * SAMPLE_RATE);
   const samples = new Float32Array(total);

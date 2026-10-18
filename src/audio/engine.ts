@@ -1,4 +1,4 @@
-import type { SoundId } from "../sounds";
+import { getSoundById, isGeneratedSound, type SoundId } from "../sounds";
 import { LOOP_SAMPLE_RATE, renderSoundLoop } from "./synth";
 import { encodeStereoWav } from "./wav";
 
@@ -85,6 +85,14 @@ export class NoiseEngine {
     const cached = this.urls.get(soundId);
     if (cached) {
       return cached;
+    }
+    const recorded = getSoundById(soundId).audio;
+    if (recorded) {
+      this.urls.set(soundId, recorded);
+      return recorded;
+    }
+    if (!isGeneratedSound(soundId)) {
+      return this.sourceFor("white");
     }
     const samples = renderSoundLoop(soundId);
     const blob = encodeStereoWav(samples, LOOP_SAMPLE_RATE);
