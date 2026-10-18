@@ -3,7 +3,7 @@ import { LOOP_SAMPLE_RATE, renderSoundLoop } from "./synth";
 import { encodeStereoWav } from "./wav";
 
 const FADE_OUT_SECONDS = 12;
-const HANDOFF_SECONDS = 0.6;
+const HANDOFF_SECONDS = 8;
 
 type AudioSessionNavigator = Navigator & {
   audioSession?: { type: string };
@@ -255,19 +255,12 @@ export class NoiseEngine {
     this.handoff = true;
     this.expectEndPause = true;
     incoming.currentTime = 0;
-    incoming.volume = 0;
-    void incoming.play().then(
-      () => {
-        if (!this.handoff) {
-          return;
-        }
-        this.applyVolumes();
-      },
-      () => {
-        this.handoff = false;
-        this.expectEndPause = false;
-      },
-    );
+    this.applyVolumes();
+    void incoming.play().catch(() => {
+      this.handoff = false;
+      this.expectEndPause = false;
+      this.applyVolumes();
+    });
   }
 
   private finishHandoff(finishedIndex: number): void {

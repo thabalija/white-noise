@@ -1,6 +1,6 @@
 import type { SoundId } from "../sounds";
 
-const LOOP_SECONDS = 20;
+const LOOP_SECONDS = 180;
 const CROSSFADE_SECONDS = 0.08;
 const SAMPLE_RATE = 44100;
 
