@@ -7,14 +7,19 @@ export type PersistedPlayerState = {
   soundId: SoundId;
   volume: number;
   timerMinutes: TimerMinutes;
-  timerEndsAt: number | null;
+  /** Milliseconds left. The clock runs only while audio is playing. */
+  timerRemainingMs: number | null;
+};
+
+type StoredPlayerState = Partial<PersistedPlayerState> & {
+  timerEndsAt?: unknown;
 };
 
 const DEFAULT_STATE: PersistedPlayerState = {
   soundId: "white",
   volume: 0.7,
   timerMinutes: 0,
-  timerEndsAt: null,
+  timerRemainingMs: null,
 };
 
 function clampVolume(value: number): number {
@@ -30,6 +35,29 @@ function parseTimerMinutes(value: unknown): TimerMinutes {
   return 0;
 }
 
+function parseRemainingMs(
+  parsed: StoredPlayerState,
+  timerMinutes: TimerMinutes,
+): number | null {
+  if (timerMinutes === 0) {
+    return null;
+  }
+  if (
+    typeof parsed.timerRemainingMs === "number" &&
+    Number.isFinite(parsed.timerRemainingMs)
+  ) {
+    return parsed.timerRemainingMs > 0 ? parsed.timerRemainingMs : null;
+  }
+  if (
+    typeof parsed.timerEndsAt === "number" &&
+    Number.isFinite(parsed.timerEndsAt)
+  ) {
+    const left = parsed.timerEndsAt - Date.now();
+    return left > 0 ? left : null;
+  }
+  return timerMinutes * 60_000;
+}
+
 export function loadPersistedState(): PersistedPlayerState {
   if (typeof localStorage === "undefined") {
     return DEFAULT_STATE;
@@ -39,17 +67,21 @@ export function loadPersistedState(): PersistedPlayerState {
     if (!raw) {
       return DEFAULT_STATE;
     }
-    const parsed = JSON.parse(raw) as Partial<PersistedPlayerState>;
+    const parsed = JSON.parse(raw) as StoredPlayerState;
     const soundId =
       typeof parsed.soundId === "string" && isSoundId(parsed.soundId)
         ? parsed.soundId
         : DEFAULT_STATE.soundId;
+    let timerMinutes = parseTimerMinutes(parsed.timerMinutes);
+    const timerRemainingMs = parseRemainingMs(parsed, timerMinutes);
+    if (timerRemainingMs === null) {
+      timerMinutes = 0;
+    }
     return {
       soundId,
       volume: clampVolume(Number(parsed.volume)),
-      timerMinutes: parseTimerMinutes(parsed.timerMinutes),
-      timerEndsAt:
-        typeof parsed.timerEndsAt === "number" ? parsed.timerEndsAt : null,
+      timerMinutes,
+      timerRemainingMs,
     };
   } catch {
     return DEFAULT_STATE;

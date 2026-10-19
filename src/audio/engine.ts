@@ -22,6 +22,7 @@ export class NoiseEngine {
   private intendedPlaying = false;
   private suppressPauseHandler = false;
   private systemPauseHandler: (() => void) | null = null;
+  private swappingSource = false;
   private readonly urls = new Map<SoundId, string>();
   private currentUrl = "";
 
@@ -160,37 +161,50 @@ export class NoiseEngine {
     this.applyVolumes();
   }
 
-  setSound(soundId: SoundId): void {
-    const wasPlaying = this.isPlaying();
+  async setSound(soundId: SoundId): Promise<void> {
+    const wasPlaying = this.isPlaying() || this.intendedPlaying;
     this.soundId = soundId;
     if (!this.players) {
       return;
     }
     const previousUrl = this.currentUrl;
-    this.applySource(soundId);
-    if (!wasPlaying) {
-      return;
+    const nextUrl = this.sourceFor(soundId);
+    const swapping = nextUrl !== this.currentUrl;
+    if (swapping) {
+      this.swappingSource = true;
     }
-    this.intendedPlaying = true;
-    this.markPlaybackSession();
-    if (previousUrl !== this.currentUrl) {
-      this.handoff = false;
-      this.expectEndPause = false;
-      this.activeIndex = 0;
-      this.suppressPauseHandler = true;
-      this.players[1]?.pause();
-      this.suppressPauseHandler = false;
-      const next = this.players[0];
-      if (next) {
-        next.currentTime = 0;
-        this.applyVolumes();
-        void next.play();
+    try {
+      this.applySource(soundId);
+      if (!wasPlaying) {
+        return;
       }
-      return;
-    }
-    const active = this.players[this.activeIndex];
-    if (active?.paused) {
-      void active.play();
+      this.intendedPlaying = true;
+      this.markPlaybackSession();
+      if (previousUrl !== this.currentUrl) {
+        this.handoff = false;
+        this.expectEndPause = false;
+        this.activeIndex = 0;
+        this.suppressPauseHandler = true;
+        this.players[1]?.pause();
+        this.suppressPauseHandler = false;
+        const next = this.players[0];
+        if (next) {
+          next.currentTime = 0;
+          this.applyVolumes();
+          await next.play();
+        }
+        return;
+      }
+      const active = this.players[this.activeIndex];
+      if (active?.paused) {
+        await active.play();
+      }
+    } finally {
+      if (swapping) {
+        window.setTimeout(() => {
+          this.swappingSource = false;
+        }, 300);
+      }
     }
   }
 
@@ -303,7 +317,11 @@ export class NoiseEngine {
   }
 
   private onPause(index: number): void {
-    if (this.suppressPauseHandler || index !== this.activeIndex) {
+    if (
+      this.suppressPauseHandler ||
+      this.swappingSource ||
+      index !== this.activeIndex
+    ) {
       return;
     }
     const active = this.players?.[index];

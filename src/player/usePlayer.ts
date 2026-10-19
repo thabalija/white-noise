@@ -24,13 +24,6 @@ export type PlayerState = {
   setTimer: (minutes: TimerMinutes) => void;
 };
 
-function computeRemainingMs(timerEndsAt: number | null): number | null {
-  if (timerEndsAt === null) {
-    return null;
-  }
-  return Math.max(0, timerEndsAt - Date.now());
-}
-
 export function usePlayer(): PlayerState {
   const engine = getNoiseEngine();
   const persisted = loadPersistedState();
@@ -41,11 +34,14 @@ export function usePlayer(): PlayerState {
   const [timerMinutes, setTimerMinutesState] = useState<TimerMinutes>(
     persisted.timerMinutes,
   );
-  const [remainingMs, setRemainingMs] = useState<number | null>(() =>
-    computeRemainingMs(persisted.timerEndsAt),
+  const [remainingMs, setRemainingMs] = useState<number | null>(
+    persisted.timerRemainingMs,
   );
 
-  const timerEndsAtRef = useRef<number | null>(persisted.timerEndsAt);
+  const timerEndsAtRef = useRef<number | null>(null);
+  const timerRemainingMsRef = useRef<number | null>(persisted.timerRemainingMs);
+  const timerMinutesRef = useRef(persisted.timerMinutes);
+  timerMinutesRef.current = timerMinutes;
   const fadeStartedRef = useRef(false);
   const playingRef = useRef(false);
   const soundIdRef = useRef(soundId);
@@ -62,13 +58,18 @@ export function usePlayer(): PlayerState {
   });
 
   const persist = useCallback(() => {
+    const endsAt = timerEndsAtRef.current;
+    if (endsAt !== null) {
+      const remaining = Math.max(0, endsAt - Date.now());
+      timerRemainingMsRef.current = remaining > 0 ? remaining : null;
+    }
     savePersistedState({
-      soundId,
+      soundId: soundIdRef.current,
       volume,
-      timerMinutes,
-      timerEndsAt: timerEndsAtRef.current,
+      timerMinutes: timerMinutesRef.current,
+      timerRemainingMs: timerRemainingMsRef.current,
     });
-  }, [soundId, volume, timerMinutes]);
+  }, [volume]);
 
   const syncMediaSession = useCallback(() => {
     updateMediaSession(soundId, playingRef.current);
@@ -76,33 +77,47 @@ export function usePlayer(): PlayerState {
 
   const clearTimerEnd = useCallback(() => {
     timerEndsAtRef.current = null;
+    timerRemainingMsRef.current = null;
     fadeStartedRef.current = false;
     setRemainingMs(null);
   }, []);
 
-  const armTimerFromMinutes = useCallback(
-    (minutes: TimerMinutes) => {
-      if (minutes === 0) {
-        clearTimerEnd();
-        return;
-      }
-      timerEndsAtRef.current = Date.now() + minutes * 60_000;
-      fadeStartedRef.current = false;
-      setRemainingMs(computeRemainingMs(timerEndsAtRef.current));
-    },
-    [clearTimerEnd],
-  );
+  const freezeTimer = useCallback(() => {
+    const endsAt = timerEndsAtRef.current;
+    if (endsAt === null) {
+      return;
+    }
+    const remaining = Math.max(0, endsAt - Date.now());
+    timerEndsAtRef.current = null;
+    fadeStartedRef.current = false;
+    timerRemainingMsRef.current = remaining > 0 ? remaining : null;
+    setRemainingMs(timerRemainingMsRef.current);
+  }, []);
+
+  const beginTimerClock = useCallback(() => {
+    if (timerEndsAtRef.current !== null) {
+      return;
+    }
+    const remaining = timerRemainingMsRef.current;
+    if (remaining === null || remaining <= 0) {
+      return;
+    }
+    timerEndsAtRef.current = Date.now() + remaining;
+    fadeStartedRef.current = false;
+    setRemainingMs(remaining);
+  }, []);
 
   const pausePlayback = useCallback(async () => {
     engine.pause();
     playingRef.current = false;
     setPlaying(false);
+    freezeTimer();
     syncMediaSession();
     persist();
-  }, [engine, persist, syncMediaSession]);
+  }, [engine, freezeTimer, persist, syncMediaSession]);
 
   const startPlayback = useCallback(async () => {
-    engine.setSound(soundId);
+    await engine.setSound(soundId);
     playingRef.current = true;
     syncMediaSession();
     try {
@@ -114,21 +129,10 @@ export function usePlayer(): PlayerState {
       return;
     }
     setPlaying(true);
-
-    if (timerMinutes > 0 && timerEndsAtRef.current === null) {
-      armTimerFromMinutes(timerMinutes);
-    }
-
+    beginTimerClock();
     syncMediaSession();
     persist();
-  }, [
-    armTimerFromMinutes,
-    engine,
-    persist,
-    soundId,
-    syncMediaSession,
-    timerMinutes,
-  ]);
+  }, [beginTimerClock, engine, persist, soundId, syncMediaSession]);
 
   const toggle = useCallback(async () => {
     if (playingRef.current) {
@@ -140,13 +144,19 @@ export function usePlayer(): PlayerState {
 
   const setSound = useCallback(
     async (id: SoundId) => {
+      soundIdRef.current = id;
       setSoundIdState(id);
       document.documentElement.dataset.sound = id;
-      engine.setSound(id);
+      await engine.setSound(id);
+      if (engine.isPlaying()) {
+        playingRef.current = true;
+        setPlaying(true);
+        beginTimerClock();
+      }
       syncMediaSession();
       persist();
     },
-    [engine, persist, syncMediaSession],
+    [beginTimerClock, engine, persist, syncMediaSession],
   );
 
   const setVolume = useCallback(
@@ -161,24 +171,27 @@ export function usePlayer(): PlayerState {
 
   const setTimer = useCallback(
     (minutes: TimerMinutes) => {
+      timerMinutesRef.current = minutes;
       setTimerMinutesState(minutes);
+      fadeStartedRef.current = false;
       if (minutes === 0) {
         clearTimerEnd();
-      } else if (playingRef.current) {
-        armTimerFromMinutes(minutes);
       } else {
-        timerEndsAtRef.current = Date.now() + minutes * 60_000;
-        fadeStartedRef.current = false;
-        setRemainingMs(computeRemainingMs(timerEndsAtRef.current));
+        const duration = minutes * 60_000;
+        timerRemainingMsRef.current = duration;
+        timerEndsAtRef.current = playingRef.current
+          ? Date.now() + duration
+          : null;
+        setRemainingMs(duration);
       }
       persist();
     },
-    [armTimerFromMinutes, clearTimerEnd, persist],
+    [clearTimerEnd, persist],
   );
 
   actionsRef.current = { startPlayback, pausePlayback, setSound };
-  const sessionSyncRef = useRef({ persist, syncMediaSession });
-  sessionSyncRef.current = { persist, syncMediaSession };
+  const sessionSyncRef = useRef({ persist, syncMediaSession, freezeTimer });
+  sessionSyncRef.current = { persist, syncMediaSession, freezeTimer };
 
   useEffect(() => {
     engine.setSystemPauseHandler(() => {
@@ -187,6 +200,7 @@ export function usePlayer(): PlayerState {
       }
       playingRef.current = false;
       setPlaying(false);
+      sessionSyncRef.current.freezeTimer();
       sessionSyncRef.current.syncMediaSession();
       sessionSyncRef.current.persist();
     });
@@ -231,14 +245,15 @@ export function usePlayer(): PlayerState {
   }, [engine]);
 
   useEffect(() => {
+    let lastSavedSecond: number | null = null;
     const interval = window.setInterval(() => {
       const endsAt = timerEndsAtRef.current;
       if (endsAt === null) {
-        setRemainingMs(null);
         return;
       }
 
-      const remaining = computeRemainingMs(endsAt);
+      const remaining = Math.max(0, endsAt - Date.now());
+      timerRemainingMsRef.current = remaining > 0 ? remaining : null;
       setRemainingMs(remaining);
 
       if (remaining === 0) {
@@ -246,14 +261,20 @@ export function usePlayer(): PlayerState {
           void pausePlayback();
         }
         clearTimerEnd();
+        timerMinutesRef.current = 0;
         setTimerMinutesState(0);
         persist();
         return;
       }
 
+      const second = Math.ceil(remaining / 1000);
+      if (second !== lastSavedSecond) {
+        lastSavedSecond = second;
+        persist();
+      }
+
       if (
         playingRef.current &&
-        remaining !== null &&
         remaining <= FADE_BEFORE_END_MS &&
         !fadeStartedRef.current
       ) {
@@ -262,6 +283,7 @@ export function usePlayer(): PlayerState {
           playingRef.current = false;
           setPlaying(false);
           clearTimerEnd();
+          timerMinutesRef.current = 0;
           setTimerMinutesState(0);
           syncMediaSession();
           persist();

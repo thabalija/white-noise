@@ -18,52 +18,60 @@ export type SoundId = (typeof SOUND_IDS)[number];
 export type SoundDefinition = {
   id: SoundId;
   label: string;
-  image: string;
+  imageLow: string;
+  imageHigh: string;
   audio?: string;
 };
+
+function images(id: SoundId): Pick<SoundDefinition, "imageLow" | "imageHigh"> {
+  return {
+    imageLow: `/backgrounds/low/${id}.jpg`,
+    imageHigh: `/backgrounds/high/${id}.jpg`,
+  };
+}
 
 export const SOUNDS: readonly SoundDefinition[] = [
   {
     id: "white",
     label: "White noise",
-    image: "/backgrounds/white.jpg",
+    ...images("white"),
     audio: "/audio/white.mp3",
   },
   {
     id: "pink",
     label: "Pink noise",
-    image: "/backgrounds/pink.jpg",
+    ...images("pink"),
     audio: "/audio/pink.mp3",
   },
   {
     id: "brown",
     label: "Brown noise",
-    image: "/backgrounds/brown.jpg",
+    ...images("brown"),
     audio: "/audio/brown.mp3",
   },
-  { id: "grey", label: "Grey noise", image: "/backgrounds/grey.jpg" },
+  { id: "grey", label: "Grey noise", ...images("grey") },
   {
     id: "jungle",
     label: "Jungle",
-    image: "/backgrounds/jungle.jpg",
+    ...images("jungle"),
     audio: "/audio/jungle.mp3",
   },
   {
     id: "waves",
     label: "Sea waves",
-    image: "/backgrounds/waves.jpg",
+    ...images("waves"),
     audio: "/audio/waves.mp3",
   },
   {
     id: "rain",
     label: "Rain",
-    image: "/backgrounds/rain.jpg",
+    ...images("rain"),
     audio: "/audio/rain.mp3",
   },
   {
     id: "fan",
     label: "Fan",
-    image: "/backgrounds/fan.jpg",
+    ...images("fan"),
     audio: "/audio/fan.mp3",
   },
 ] as const;
